@@ -1,0 +1,3 @@
+id,firstName,lastName,username,password,isActive,specialization
+1,Mike,Brown,Mike.Brown,trainerpas1,true,FITNESS
+2,Sara,Connor,Sara.Connor,trainerpas2,true,YOGA
