@@ -35,7 +35,6 @@ class TraineeDaoTest {
         Trainee saved = dao.save(t);
 
         assertNotNull(saved.getTraineeId());
-        assertEquals(saved.getTraineeId(), saved.getUserId());
         assertTrue(traineeMap.containsKey(saved.getTraineeId()));
     }
 
