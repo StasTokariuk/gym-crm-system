@@ -26,6 +26,7 @@ public class TrainerDao extends AbstractDao<Trainer> {
     @Override
     protected void setEntityId(Trainer entity, Long id) {
         entity.setTrainerId(id);
+        entity.setUserId(id);
     }
 
     @Override

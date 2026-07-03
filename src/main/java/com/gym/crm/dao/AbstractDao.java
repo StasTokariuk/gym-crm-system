@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public abstract class AbstractDao<T> {
 
     protected InMemoryStorage storage;
-    protected final AtomicLong idGenerator = new AtomicLong(0);
+    protected static final AtomicLong idGenerator = new AtomicLong(0);
 
     @Autowired
     public void setStorage(InMemoryStorage storage) {
@@ -44,7 +44,7 @@ public abstract class AbstractDao<T> {
 
     public void initializeIdGenerator() {
         long max = getStorageMap().keySet().stream().mapToLong(Long::longValue).max().orElse(0);
-        idGenerator.set(max);
+        idGenerator.accumulateAndGet(max, Math::max);
     }
 
     private long generateNextId() {
