@@ -2,7 +2,6 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainer;
-import com.gym.crm.service.util.UserProfileUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,13 +19,14 @@ public class TrainerService {
 
     private final TrainerDao trainerDao;
     private final PasswordEncoder passwordEncoder;
+    private final UserProfileService userProfileService;
 
     public Trainer create(Trainer trainer) {
-        Set<String> existing = collectUsernames();
-        String username = UserProfileUtil.buildUsername(
-                trainer.getFirstName(), trainer.getLastName(), existing);
+        String username = userProfileService.buildUsername(
+                trainer.getFirstName(), trainer.getLastName(),
+                candidate -> trainerDao.findByUsername(candidate).isPresent());
         trainer.setUsername(username);
-        trainer.setPassword(passwordEncoder.encode(UserProfileUtil.generatePassword()));
+        trainer.setPassword(passwordEncoder.encode(userProfileService.generatePassword()));
         trainer.setActive(true);
         Trainer saved = trainerDao.save(trainer);
         log.info("Created trainer profile: username={}", saved.getUsername());
@@ -44,6 +42,11 @@ public class TrainerService {
         return saved;
     }
 
+    public void delete(Long id) {
+        trainerDao.deleteById(id);
+        log.info("Deleted trainer id={}", id);
+    }
+
     public Optional<Trainer> select(Long id) {
         log.debug("Selecting trainer id={}", id);
         return trainerDao.findById(id);
@@ -51,11 +54,5 @@ public class TrainerService {
 
     public List<Trainer> selectAll() {
         return trainerDao.findAll();
-    }
-
-    private Set<String> collectUsernames() {
-        return trainerDao.findAll().stream()
-                .map(Trainer::getUsername)
-                .collect(Collectors.toSet());
     }
 }

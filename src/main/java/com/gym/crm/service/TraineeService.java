@@ -2,7 +2,6 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TraineeDao;
 import com.gym.crm.model.Trainee;
-import com.gym.crm.service.util.UserProfileUtil;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -22,13 +19,14 @@ public class TraineeService {
 
     private final TraineeDao traineeDao;
     private final PasswordEncoder passwordEncoder;
+    private final UserProfileService userProfileService;
 
     public Trainee create(Trainee trainee) {
-        Set<String> existing = collectUsernames();
-        String username = UserProfileUtil.buildUsername(
-                trainee.getFirstName(), trainee.getLastName(), existing);
+        String username = userProfileService.buildUsername(
+                trainee.getFirstName(), trainee.getLastName(),
+                candidate -> traineeDao.findByUsername(candidate).isPresent());
         trainee.setUsername(username);
-        trainee.setPassword(passwordEncoder.encode(UserProfileUtil.generatePassword()));
+        trainee.setPassword(passwordEncoder.encode(userProfileService.generatePassword()));
         trainee.setActive(true);
         Trainee saved = traineeDao.save(trainee);
         log.info("Created trainee profile: username={}", saved.getUsername());
@@ -56,11 +54,5 @@ public class TraineeService {
 
     public List<Trainee> selectAll() {
         return traineeDao.findAll();
-    }
-
-    private Set<String> collectUsernames() {
-        return traineeDao.findAll().stream()
-                .map(Trainee::getUsername)
-                .collect(Collectors.toSet());
     }
 }

@@ -2,7 +2,6 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TraineeDao;
 import com.gym.crm.model.Trainee;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -27,42 +27,59 @@ class TraineeServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private UserProfileService userProfileService;
+
     @InjectMocks
     private TraineeService service;
-
-    @BeforeEach
-    void setUp() {
-    }
 
     @Test
     @DisplayName("create generates username, password and sets active flag")
     void create_generatesUsernameAndPassword() {
-        when(passwordEncoder.encode(any(String.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(traineeDao.findAll()).thenReturn(List.of());
+        when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith");
+        when(userProfileService.generatePassword()).thenReturn("1234567890");
+        when(passwordEncoder.encode("1234567890")).thenReturn("encodedPassword");
         when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
         Trainee result = service.create(t);
 
         assertEquals("John.Smith", result.getUsername());
-        assertEquals(10, result.getPassword().length());
+        assertEquals("encodedPassword", result.getPassword());
         assertTrue(result.isActive());
+
+        verify(userProfileService).buildUsername(eq("John"), eq("Smith"), any(Predicate.class));
         verify(traineeDao).save(t);
     }
 
     @Test
     @DisplayName("create adds serial suffix on username collision")
     void create_addsSerialSuffixOnCollision() {
-        when(passwordEncoder.encode(any(String.class))).thenAnswer(inv -> inv.getArgument(0));
-        Trainee existing = new Trainee("John", "Smith", null, null);
-        existing.setUsername("John.Smith");
-        when(traineeDao.findAll()).thenReturn(List.of(existing));
+        when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith1");
+        when(userProfileService.generatePassword()).thenReturn("1234567890");
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
         Trainee result = service.create(t);
 
         assertEquals("John.Smith1", result.getUsername());
+        verify(traineeDao).save(t);
+    }
+
+    @Test
+    @DisplayName("create adds multiple serial suffixes on multiple collisions")
+    void create_addsMultipleSerialSuffixes() {
+        when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith3");
+        when(userProfileService.generatePassword()).thenReturn("1234567890");
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
+        Trainee result = service.create(t);
+
+        assertEquals("John.Smith3", result.getUsername());
+        verify(traineeDao).save(t);
     }
 
     @Test

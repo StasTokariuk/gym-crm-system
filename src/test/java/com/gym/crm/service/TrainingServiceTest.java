@@ -27,10 +27,6 @@ class TrainingServiceTest {
     @InjectMocks
     private TrainingService service;
 
-    @BeforeEach
-    void setUp() {
-    }
-
     @Test
     @DisplayName("create saves the training")
     void create_savesTraining() {

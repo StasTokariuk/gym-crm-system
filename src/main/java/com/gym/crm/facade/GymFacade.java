@@ -61,6 +61,10 @@ public class GymFacade {
         trainerService.update(t);
     }
 
+    public void deleteTrainer(Long id) {
+        trainerService.delete(id);
+    }
+
     public Optional<Trainer> getTrainer(Long id) {
         return trainerService.select(id);
     }

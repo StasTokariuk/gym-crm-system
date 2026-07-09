@@ -1,60 +1,56 @@
 package com.gym.crm.dao;
 
 import com.gym.crm.model.Trainer;
-import com.gym.crm.storage.InMemoryStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Repository
-public class TrainerDao {
+public class TrainerDao extends AbstractDao<Trainer> {
 
     private static final Logger log = LoggerFactory.getLogger(TrainerDao.class);
 
-    private InMemoryStorage storage;
-    private final AtomicLong idGenerator = new AtomicLong(0);
-
-    @Autowired
-    public void setStorage(InMemoryStorage storage) {
-        this.storage = storage;
+    @Override
+    protected Map<Long, Trainer> getStorageMap() {
+        return storage.getTrainerStorage();
     }
 
+    @Override
+    protected Long getEntityId(Trainer entity) {
+        return entity.getTrainerId();
+    }
+
+    @Override
+    protected void setEntityId(Trainer entity, Long id) {
+        entity.setTrainerId(id);
+        entity.setUserId(id);
+    }
+
+    @Override
     public Trainer save(Trainer trainer) {
-        if (trainer.getTrainerId() == null) {
-            long id = generateNextId();
-            trainer.setTrainerId(id);
-            trainer.setUserId(id);
-        }
-        storage.getTrainerStorage().put(trainer.getTrainerId(), trainer);
-        log.info("Saved trainer with id={}", trainer.getTrainerId());
-        return trainer;
+        Trainer saved = super.save(trainer);
+        log.info("Saved trainer with id={}", saved.getTrainerId());
+        return saved;
     }
 
-    public Optional<Trainer> findById(Long id) {
-        return Optional.ofNullable(storage.getTrainerStorage().get(id));
+    @Override
+    public void deleteById(Long id) {
+        super.deleteById(id);
+        log.info("Deleted trainer with id={}", id);
+    }
+
+    @Override
+    public void initializeIdGenerator() {
+        super.initializeIdGenerator();
+        log.debug("Initialized TrainerDao idGenerator to {}", idGenerator.get());
     }
 
     public Optional<Trainer> findByUsername(String username) {
-        return storage.getTrainerStorage().values().stream()
+        return getStorageMap().values().stream()
                 .filter(t -> username.equals(t.getUsername()))
                 .findFirst();
-    }
-
-    public List<Trainer> findAll() {
-        return new ArrayList<>(storage.getTrainerStorage().values());
-    }
-
-    private long generateNextId() {
-        Map<Long, Trainer> map = storage.getTrainerStorage();
-        long max = map.keySet().stream().mapToLong(Long::longValue).max().orElse(0);
-        idGenerator.set(Math.max(idGenerator.get(), max));
-        return idGenerator.incrementAndGet();
     }
 }

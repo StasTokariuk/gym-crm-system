@@ -113,6 +113,13 @@ class GymFacadeTest {
     }
 
     @Test
+    @DisplayName("deleteTrainer delegates to TrainerService")
+    void deleteTrainer_delegates() {
+        facade.deleteTrainer(1L);
+        verify(trainerService).delete(1L);
+    }
+
+    @Test
     @DisplayName("getTrainer delegates to TrainerService")
     void getTrainer_delegates() {
         when(trainerService.select(1L)).thenReturn(Optional.of(new Trainer()));
