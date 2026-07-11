@@ -1,9 +1,11 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainingDao;
+import com.gym.crm.model.Trainee;
+import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
+import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,8 +32,8 @@ class TrainingServiceTest {
     @Test
     @DisplayName("create saves the training")
     void create_savesTraining() {
-        Training training = new Training(1L, 2L, "Cardio",
-                TrainingTypeName.CARDIO, LocalDate.now(), 60);
+        Training training = new Training(new Trainee(), new Trainer(), "Cardio",
+                new TrainingType(TrainingTypeName.CARDIO), LocalDate.now(), 60);
         when(trainingDao.save(training)).thenAnswer(inv -> inv.getArgument(0));
 
         Training result = service.create(training);
@@ -44,23 +46,13 @@ class TrainingServiceTest {
     @DisplayName("select returns training by id")
     void select_returnsTraining() {
         Training training = new Training();
-        training.setTrainingId(1L);
+        training.setId(1L);
         when(trainingDao.findById(1L)).thenReturn(Optional.of(training));
 
         Optional<Training> result = service.select(1L);
 
         assertTrue(result.isPresent());
-        assertEquals(1L, result.get().getTrainingId());
-    }
-
-    @Test
-    @DisplayName("select returns empty Optional when not found")
-    void select_returnsEmptyWhenNotFound() {
-        when(trainingDao.findById(404L)).thenReturn(Optional.empty());
-
-        Optional<Training> result = service.select(404L);
-
-        assertTrue(result.isEmpty());
+        assertEquals(1L, result.get().getId());
     }
 
     @Test

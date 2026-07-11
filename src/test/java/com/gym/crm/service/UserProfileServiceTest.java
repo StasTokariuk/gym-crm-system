@@ -39,7 +39,7 @@ class UserProfileServiceTest {
         String lastName = "Doe";
         Set<String> existingUsernames = Set.of("Alice.Smith", "Bob.Johnson");
 
-        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames);
+        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames::contains);
 
         assertEquals("John.Doe", username, "Should return base username when it does not exist");
     }
@@ -50,7 +50,7 @@ class UserProfileServiceTest {
         String lastName = "Doe";
         Set<String> existingUsernames = Set.of("John.Doe");
 
-        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames);
+        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames::contains);
 
         assertEquals("John.Doe1", username, "Should append 1 when base username is taken");
     }
@@ -61,7 +61,7 @@ class UserProfileServiceTest {
         String lastName = "Doe";
         Set<String> existingUsernames = Set.of("John.Doe", "John.Doe1", "John.Doe2");
 
-        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames);
+        String username = userProfileService.buildUsername(firstName, lastName, existingUsernames::contains);
 
         assertEquals("John.Doe3", username, "Should find the next available sequential number");
     }

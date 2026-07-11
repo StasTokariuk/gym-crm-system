@@ -1,53 +1,69 @@
 package com.gym.crm.dao;
 
+import com.gym.crm.model.Trainee;
+import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
+import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
-import com.gym.crm.storage.InMemoryStorage;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class TrainingDaoTest {
 
+    @Mock
+    private SessionFactory sessionFactory;
+
+    @Mock
+    private Session session;
+
+    @Mock
+    private Query<Training> query;
+
+    @InjectMocks
     private TrainingDao dao;
-    private Map<Long, Training> trainingMap;
 
     @BeforeEach
     void setUp() {
-        trainingMap = new HashMap<>();
-        InMemoryStorage storage = new InMemoryStorage(new HashMap<>(), new HashMap<>(), trainingMap);
-        dao = new TrainingDao();
-        dao.setStorage(storage);
+        lenient().when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
     @Test
-    @DisplayName("save generates id when it is null")
-    void save_generatesId() {
-        Training t = new Training(1L, 2L, "Cardio",
-                TrainingTypeName.CARDIO, LocalDate.now(), 60);
+    @DisplayName("save calls saveOrUpdate on session")
+    void save_callsHibernateSaveOrUpdate() {
+        Training t = new Training(new Trainee(), new Trainer(), "Cardio",
+                new TrainingType(TrainingTypeName.CARDIO), LocalDate.now(), 60);
 
         Training saved = dao.save(t);
 
-        assertNotNull(saved.getTrainingId());
-        assertTrue(trainingMap.containsKey(saved.getTrainingId()));
+        verify(session).saveOrUpdate(t);
+        assertEquals(t, saved);
     }
 
     @Test
     @DisplayName("findById returns the stored training")
     void findById_returnsTraining() {
-        Training t = new Training(1L, 2L, "Yoga",
-                TrainingTypeName.YOGA, LocalDate.now(), 45);
-        dao.save(t);
+        Training t = new Training(new Trainee(), new Trainer(), "Yoga",
+                new TrainingType(TrainingTypeName.YOGA), LocalDate.now(), 45);
+        t.setId(1L);
+        when(session.get(Training.class, 1L)).thenReturn(t);
 
-        Optional<Training> found = dao.findById(t.getTrainingId());
+        Optional<Training> found = dao.findById(1L);
 
         assertTrue(found.isPresent());
         assertEquals("Yoga", found.get().getTrainingName());
@@ -56,17 +72,19 @@ class TrainingDaoTest {
     @Test
     @DisplayName("findById returns empty Optional when missing")
     void findById_returnsEmpty() {
+        when(session.get(Training.class, 999L)).thenReturn(null);
         assertTrue(dao.findById(999L).isEmpty());
     }
 
     @Test
     @DisplayName("findAll returns all stored trainings")
     void findAll_returnsAll() {
-        dao.save(new Training(1L, 1L, "T1", TrainingTypeName.FITNESS, LocalDate.now(), 30));
-        dao.save(new Training(2L, 2L, "T2", TrainingTypeName.CARDIO, LocalDate.now(), 40));
+        List<Training> list = List.of(new Training(), new Training());
+        when(session.createQuery("from com.gym.crm.model.Training", Training.class)).thenReturn(query);
+        when(query.getResultList()).thenReturn(list);
 
-        List<Training> all = dao.findAll();
+        List<Training> result = dao.findAll();
 
-        assertEquals(2, all.size());
+        assertEquals(2, result.size());
     }
 }

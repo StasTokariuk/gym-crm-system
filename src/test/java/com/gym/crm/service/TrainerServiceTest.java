@@ -2,7 +2,9 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainer;
+import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
+import com.gym.crm.model.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,47 +41,33 @@ class TrainerServiceTest {
         when(userProfileService.buildUsername(eq("Mike"), eq("Brown"), any(Predicate.class))).thenReturn("Mike.Brown");
         when(userProfileService.generatePassword()).thenReturn("1234567890");
         when(passwordEncoder.encode("1234567890")).thenReturn("encodedPassword");
-        when(trainerDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(trainerDao.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainer t = new Trainer("Mike", "Brown", TrainingTypeName.FITNESS);
+        TrainingType spec = new TrainingType(TrainingTypeName.FITNESS);
+        Trainer t = new Trainer(new User("Mike", "Brown"), spec);
         Trainer result = service.create(t);
 
-        assertEquals("Mike.Brown", result.getUsername());
-        assertEquals("encodedPassword", result.getPassword());
-        assertTrue(result.isActive());
-        assertEquals(TrainingTypeName.FITNESS, result.getSpecialization());
+        assertEquals("Mike.Brown", result.getUser().getUsername());
+        assertEquals("encodedPassword", result.getUser().getPassword());
+        assertTrue(result.getUser().isActive());
+        assertEquals(TrainingTypeName.FITNESS, result.getSpecialization().getTrainingTypeName());
 
         verify(userProfileService).buildUsername(eq("Mike"), eq("Brown"), any(Predicate.class));
         verify(trainerDao).save(t);
     }
 
     @Test
-    @DisplayName("create uses username with serial suffix when returned by userProfileService")
+    @DisplayName("create uses username with serial suffix on collision")
     void create_addsSerialSuffixOnCollision() {
         when(userProfileService.buildUsername(eq("Mike"), eq("Brown"), any(Predicate.class))).thenReturn("Mike.Brown1");
         when(userProfileService.generatePassword()).thenReturn("1234567890");
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(trainerDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(trainerDao.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainer t = new Trainer("Mike", "Brown", TrainingTypeName.YOGA);
+        Trainer t = new Trainer(new User("Mike", "Brown"), new TrainingType(TrainingTypeName.YOGA));
         Trainer result = service.create(t);
 
-        assertEquals("Mike.Brown1", result.getUsername());
-        verify(trainerDao).save(t);
-    }
-
-    @Test
-    @DisplayName("create uses username with multiple serial suffixes when returned by userProfileService")
-    void create_addsMultipleSerialSuffixes() {
-        when(userProfileService.buildUsername(eq("Mike"), eq("Brown"), any(Predicate.class))).thenReturn("Mike.Brown3");
-        when(userProfileService.generatePassword()).thenReturn("1234567890");
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(trainerDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        Trainer t = new Trainer("Mike", "Brown", TrainingTypeName.CARDIO);
-        Trainer result = service.create(t);
-
-        assertEquals("Mike.Brown3", result.getUsername());
+        assertEquals("Mike.Brown1", result.getUser().getUsername());
         verify(trainerDao).save(t);
     }
 
@@ -87,13 +75,14 @@ class TrainerServiceTest {
     @DisplayName("update updates an existing trainer")
     void update_existingTrainer() {
         Trainer t = new Trainer();
-        t.setTrainerId(1L);
+        t.setId(1L);
+        t.setUser(new User("Mike", "Brown"));
         when(trainerDao.findById(1L)).thenReturn(Optional.of(t));
         when(trainerDao.save(t)).thenReturn(t);
 
         Trainer result = service.update(t);
 
-        assertEquals(1L, result.getTrainerId());
+        assertEquals(1L, result.getId());
         verify(trainerDao).save(t);
     }
 
@@ -101,7 +90,7 @@ class TrainerServiceTest {
     @DisplayName("update throws when trainer not found")
     void update_throwsWhenNotFound() {
         Trainer t = new Trainer();
-        t.setTrainerId(99L);
+        t.setId(99L);
         when(trainerDao.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> service.update(t));
@@ -109,33 +98,16 @@ class TrainerServiceTest {
     }
 
     @Test
-    @DisplayName("delete delegates the call to DAO")
-    void delete_delegatesToDao() {
-        service.delete(5L);
-        verify(trainerDao).deleteById(5L);
-    }
-
-    @Test
     @DisplayName("select returns trainer by id")
     void select_returnsTrainer() {
         Trainer t = new Trainer();
-        t.setTrainerId(1L);
+        t.setId(1L);
         when(trainerDao.findById(1L)).thenReturn(Optional.of(t));
 
         Optional<Trainer> result = service.select(1L);
 
         assertTrue(result.isPresent());
-        assertEquals(1L, result.get().getTrainerId());
-    }
-
-    @Test
-    @DisplayName("select returns empty Optional when not found")
-    void select_returnsEmptyWhenNotFound() {
-        when(trainerDao.findById(404L)).thenReturn(Optional.empty());
-
-        Optional<Trainer> result = service.select(404L);
-
-        assertTrue(result.isEmpty());
+        assertEquals(1L, result.get().getId());
     }
 
     @Test

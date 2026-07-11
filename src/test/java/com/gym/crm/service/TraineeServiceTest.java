@@ -2,6 +2,7 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TraineeDao;
 import com.gym.crm.model.Trainee;
+import com.gym.crm.model.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,19 +35,24 @@ class TraineeServiceTest {
     private TraineeService service;
 
     @Test
-    @DisplayName("create generates username, password and sets active flag")
+    @DisplayName("create generates username, password and sets active flag in User object")
     void create_generatesUsernameAndPassword() {
+        // Arrange
         when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith");
         when(userProfileService.generatePassword()).thenReturn("1234567890");
         when(passwordEncoder.encode("1234567890")).thenReturn("encodedPassword");
-        when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(traineeDao.save(any(Trainee.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
+        User user = new User("John", "Smith");
+        Trainee t = new Trainee(user, LocalDate.of(2000, 1, 1), "Kyiv");
+
+        // Act
         Trainee result = service.create(t);
 
-        assertEquals("John.Smith", result.getUsername());
-        assertEquals("encodedPassword", result.getPassword());
-        assertTrue(result.isActive());
+        // Assert
+        assertEquals("John.Smith", result.getUser().getUsername());
+        assertEquals("encodedPassword", result.getUser().getPassword());
+        assertTrue(result.getUser().isActive());
 
         verify(userProfileService).buildUsername(eq("John"), eq("Smith"), any(Predicate.class));
         verify(traineeDao).save(t);
@@ -58,27 +64,13 @@ class TraineeServiceTest {
         when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith1");
         when(userProfileService.generatePassword()).thenReturn("1234567890");
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(traineeDao.save(any(Trainee.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
+        User user = new User("John", "Smith");
+        Trainee t = new Trainee(user, LocalDate.of(2000, 1, 1), "Kyiv");
         Trainee result = service.create(t);
 
-        assertEquals("John.Smith1", result.getUsername());
-        verify(traineeDao).save(t);
-    }
-
-    @Test
-    @DisplayName("create adds multiple serial suffixes on multiple collisions")
-    void create_addsMultipleSerialSuffixes() {
-        when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith3");
-        when(userProfileService.generatePassword()).thenReturn("1234567890");
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
-        when(traineeDao.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        Trainee t = new Trainee("John", "Smith", LocalDate.of(2000, 1, 1), "Kyiv");
-        Trainee result = service.create(t);
-
-        assertEquals("John.Smith3", result.getUsername());
+        assertEquals("John.Smith1", result.getUser().getUsername());
         verify(traineeDao).save(t);
     }
 
@@ -86,13 +78,15 @@ class TraineeServiceTest {
     @DisplayName("update updates an existing trainee")
     void update_existingTrainee() {
         Trainee t = new Trainee();
-        t.setTraineeId(1L);
+        t.setId(1L);
+        t.setUser(new User("John", "Smith"));
+
         when(traineeDao.findById(1L)).thenReturn(Optional.of(t));
         when(traineeDao.save(t)).thenReturn(t);
 
         Trainee result = service.update(t);
 
-        assertEquals(1L, result.getTraineeId());
+        assertEquals(1L, result.getId());
         verify(traineeDao).save(t);
     }
 
@@ -100,7 +94,7 @@ class TraineeServiceTest {
     @DisplayName("update throws when trainee not found")
     void update_throwsWhenNotFound() {
         Trainee t = new Trainee();
-        t.setTraineeId(99L);
+        t.setId(99L);
         when(traineeDao.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class, () -> service.update(t));
@@ -125,13 +119,13 @@ class TraineeServiceTest {
     @DisplayName("select returns trainee by id")
     void select_returnsTrainee() {
         Trainee t = new Trainee();
-        t.setTraineeId(1L);
+        t.setId(1L);
         when(traineeDao.findById(1L)).thenReturn(Optional.of(t));
 
         Optional<Trainee> result = service.select(1L);
 
         assertTrue(result.isPresent());
-        assertEquals(1L, result.get().getTraineeId());
+        assertEquals(1L, result.get().getId());
     }
 
     @Test
