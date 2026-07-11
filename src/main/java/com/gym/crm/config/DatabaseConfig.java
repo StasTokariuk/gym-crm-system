@@ -16,7 +16,8 @@ import java.util.Properties;
 
 @Configuration
 @EnableTransactionManagement
-@PropertySource("classpath:database.properties")
+@PropertySource(value = "classpath:database.properties")
+@PropertySource(value = "file:${user.dir}/.env", ignoreResourceNotFound = false)
 public class DatabaseConfig {
 
     @Value("${jdbc.driverClassName}")

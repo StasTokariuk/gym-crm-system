@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import javax.persistence.*;
 import java.time.LocalDate;
+import lombok.ToString;
 
 @Data
 @NoArgsConstructor
@@ -17,10 +18,12 @@ public class Training {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "trainee_id", nullable = false)
+    @ToString.Exclude
     private Trainee trainee;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "trainer_id", nullable = false)
+    @ToString.Exclude
     private Trainer trainer;
 
     @Column(name = "training_name", nullable = false)
@@ -28,6 +31,7 @@ public class Training {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "training_type_id", nullable = false)
+    @ToString.Exclude
     private TrainingType trainingType;
 
     @Column(name = "training_date", nullable = false)
