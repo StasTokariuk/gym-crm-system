@@ -47,15 +47,31 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
     @Override
     @Transactional
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        log.info("Database seeding started...");
+        log.info("Database initialization and seeding started...");
+
+        initializeTrainingTypes();
 
         if (traineeDao.findAll().isEmpty() && trainerDao.findAll().isEmpty()) {
             loadTrainees(traineesResource);
             loadTrainers(trainersResource);
             loadTrainings(trainingsResource);
-            log.info("Database seeding completed successfully!");
+            log.info("Database seeding from CSV completed successfully!");
         } else {
-            log.info("Database already contains data. Skipping seeding.");
+            log.info("Database already contains user data. Skipping CSV seeding.");
+        }
+    }
+
+    private void initializeTrainingTypes() {
+        for (TrainingTypeName typeName : TrainingTypeName.values()) {
+            try {
+                if (trainingTypeDao.findByName(typeName).isEmpty()) {
+                    TrainingType trainingType = new TrainingType(typeName);
+                    trainingTypeDao.save(trainingType);
+                    log.info("Initialized training type: {}", typeName);
+                }
+            } catch (Exception e) {
+                log.error("Failed to initialize training type {}: {}", typeName, e.getMessage());
+            }
         }
     }
 
@@ -112,7 +128,6 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
                 String[] p = line.split(",");
                 if (p.length < 7) continue;
 
-                String traineeUsername = p[1];
                 Long rawTraineeId = Long.parseLong(p[1]);
                 Long rawTrainerId = Long.parseLong(p[2]);
 
