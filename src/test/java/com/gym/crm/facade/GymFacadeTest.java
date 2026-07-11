@@ -3,7 +3,9 @@ package com.gym.crm.facade;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
+import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
+import com.gym.crm.model.User;
 import com.gym.crm.service.TraineeService;
 import com.gym.crm.service.TrainerService;
 import com.gym.crm.service.TrainingService;
@@ -41,7 +43,7 @@ class GymFacadeTest {
     @Test
     @DisplayName("createTrainee delegates to TraineeService")
     void createTrainee_delegates() {
-        Trainee t = new Trainee("John", "Smith", LocalDate.now(), "Kyiv");
+        Trainee t = new Trainee(new User("John", "Smith"), LocalDate.now(), "Kyiv");
         when(traineeService.create(t)).thenReturn(t);
 
         Trainee result = facade.createTrainee(t);
@@ -92,7 +94,7 @@ class GymFacadeTest {
     @Test
     @DisplayName("createTrainer delegates to TrainerService")
     void createTrainer_delegates() {
-        Trainer t = new Trainer("Mike", "Brown", TrainingTypeName.FITNESS);
+        Trainer t = new Trainer(new User("Mike", "Brown"), new TrainingType(TrainingTypeName.FITNESS));
         when(trainerService.create(t)).thenReturn(t);
 
         Trainer result = facade.createTrainer(t);
@@ -110,13 +112,6 @@ class GymFacadeTest {
         facade.updateTrainer(t);
 
         verify(trainerService).update(t);
-    }
-
-    @Test
-    @DisplayName("deleteTrainer delegates to TrainerService")
-    void deleteTrainer_delegates() {
-        facade.deleteTrainer(1L);
-        verify(trainerService).delete(1L);
     }
 
     @Test
@@ -142,8 +137,8 @@ class GymFacadeTest {
     @Test
     @DisplayName("createTraining delegates to TrainingService")
     void createTraining_delegates() {
-        Training t = new Training(1L, 2L, "Cardio",
-                TrainingTypeName.CARDIO, LocalDate.now(), 60);
+        Training t = new Training(new Trainee(), new Trainer(), "Cardio",
+                new TrainingType(TrainingTypeName.CARDIO), LocalDate.now(), 60);
         when(trainingService.create(t)).thenReturn(t);
 
         Training result = facade.createTraining(t);
