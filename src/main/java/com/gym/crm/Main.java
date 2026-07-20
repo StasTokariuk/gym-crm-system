@@ -19,37 +19,34 @@ public class Main {
         var context = new AnnotationConfigApplicationContext(AppConfig.class);
         GymFacade facade = context.getBean(GymFacade.class);
 
-        log.info("Loaded trainees from seeded database: {}", facade.getAllTrainees());
+        log.info("Trainees from file: {}", facade.getAllTrainees());
 
-        User traineeUser = new User("John", "Smith");
-        Trainee newTrainee = new Trainee(traineeUser, LocalDate.of(2000, 1, 1), "Odesa");
-
-        Trainee createdTrainee = facade.createTrainee(newTrainee);
-        log.info("New trainee created successfully with username: {}", createdTrainee.getUser().getUsername());
+        User user = new User("John", "Smith");
+        Trainee newTrainee = new Trainee(user, LocalDate.of(2000, 1, 1), "Odesa");
+        Trainee created = facade.createTrainee(newTrainee);
+        log.info("New trainee username (with serial suffix): {}", created.getUser().getUsername());
 
         List<Trainer> trainers = facade.getAllTrainers();
         if (!trainers.isEmpty()) {
             Trainer trainer = trainers.get(0);
-
             TrainingType trainingType = trainer.getSpecialization();
 
             Training training = new Training(
-                    createdTrainee,
+                    created,
                     trainer,
                     "Cardio Blast",
                     trainingType,
                     LocalDate.now(),
                     50
             );
-
             facade.createTraining(training);
             log.info("Created training 'Cardio Blast' for Trainee {} and Trainer {}",
-                    createdTrainee.getUser().getUsername(), trainer.getUser().getUsername());
+                    created.getUser().getUsername(), trainer.getUser().getUsername());
         } else {
             log.warn("No trainers found in the database. Cannot create training!");
         }
 
-        log.info("All trainings currently in database: {}", facade.getAllTrainings());
+        log.info("All trainings: {}", facade.getAllTrainings());
 
         context.close();
         log.info("Application context closed.");
