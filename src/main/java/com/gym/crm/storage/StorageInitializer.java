@@ -71,6 +71,7 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
                 }
             } catch (Exception e) {
                 log.error("Failed to initialize training type {}: {}", typeName, e.getMessage());
+                throw new RuntimeException("Critical database initialization error. Failed to save training type: " + typeName, e);
             }
         }
     }
@@ -80,7 +81,9 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             List<String> lines = readLines(resource);
             for (String line : lines) {
                 String[] p = line.split(",");
-                if (p.length < 8) continue;
+                if (p.length < 8) {
+                    throw new IllegalArgumentException("Malformed trainee CSV record (insufficient fields): " + line);
+                }
 
                 User user = new User(p[1], p[2]);
                 user.setUsername(p[3]);
@@ -93,6 +96,7 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             }
         } catch (Exception e) {
             log.error("Failed to seed trainees: {}", e.getMessage());
+            throw new RuntimeException("Rollback transaction: Failed to seed trainees from CSV file.", e);
         }
     }
 
@@ -101,7 +105,9 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             List<String> lines = readLines(resource);
             for (String line : lines) {
                 String[] p = line.split(",");
-                if (p.length < 7) continue;
+                if (p.length < 7) {
+                    throw new IllegalArgumentException("Malformed trainer CSV record (insufficient fields): " + line);
+                }
 
                 User user = new User(p[1], p[2]);
                 user.setUsername(p[3]);
@@ -118,6 +124,7 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             }
         } catch (Exception e) {
             log.error("Failed to seed trainers: {}", e.getMessage());
+            throw new RuntimeException("Rollback transaction: Failed to seed trainers from CSV file.", e);
         }
     }
 
@@ -126,18 +133,17 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             List<String> lines = readLines(resource);
             for (String line : lines) {
                 String[] p = line.split(",");
-                if (p.length < 7) continue;
+                if (p.length < 7) {
+                    throw new IllegalArgumentException("Malformed training CSV record (insufficient fields): " + line);
+                }
 
                 Long rawTraineeId = Long.parseLong(p[1]);
                 Long rawTrainerId = Long.parseLong(p[2]);
 
-                Trainee trainee = traineeDao.findById(rawTraineeId).orElse(null);
-                Trainer trainer = trainerDao.findById(rawTrainerId).orElse(null);
-
-                if (trainee == null || trainer == null) {
-                    log.warn("Skipping training seeding: trainee or trainer not found for IDs: {}, {}", rawTraineeId, rawTrainerId);
-                    continue;
-                }
+                Trainee trainee = traineeDao.findById(rawTraineeId)
+                        .orElseThrow(() -> new IllegalStateException("Trainee not found for ID: " + rawTraineeId));
+                Trainer trainer = trainerDao.findById(rawTrainerId)
+                        .orElseThrow(() -> new IllegalStateException("Trainer not found for ID: " + rawTrainerId));
 
                 String trainingName = p[3];
                 TrainingTypeName typeName = TrainingTypeName.valueOf(p[4].toUpperCase());
@@ -156,6 +162,7 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             }
         } catch (Exception e) {
             log.error("Failed to seed trainings: {}", e.getMessage(), e);
+            throw new RuntimeException("Rollback transaction: Failed to seed trainings from CSV file.", e);
         }
     }
 
@@ -174,6 +181,7 @@ public class StorageInitializer implements ApplicationListener<ContextRefreshedE
             }
         } catch (Exception e) {
             log.error("Failed to read resource: {}", resource.getFilename(), e);
+            throw new RuntimeException("Critical failure reading CSV file: " + resource.getFilename(), e);
         }
         return result;
     }
