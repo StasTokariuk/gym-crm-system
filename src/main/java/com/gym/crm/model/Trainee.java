@@ -1,6 +1,7 @@
 package com.gym.crm.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import javax.persistence.*;
@@ -8,7 +9,9 @@ import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString(exclude = "trainers")
 @NoArgsConstructor
 @Entity
 @Table(name = "trainees")
@@ -34,7 +37,6 @@ public class Trainee {
             joinColumns = @JoinColumn(name = "trainee_id"),
             inverseJoinColumns = @JoinColumn(name = "trainer_id")
     )
-    @ToString.Exclude
     private Set<Trainer> trainers = new HashSet<>();
 
     public Trainee(User user, LocalDate dateOfBirth, String address) {

@@ -1,13 +1,16 @@
 package com.gym.crm.model;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import javax.persistence.*;
 import java.util.HashSet;
 import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString(exclude = "trainees")
 @NoArgsConstructor
 @Entity
 @Table(name = "trainers")
@@ -26,7 +29,6 @@ public class Trainer {
     private User user;
 
     @ManyToMany(mappedBy = "trainers", fetch = FetchType.LAZY)
-    @ToString.Exclude
     private Set<Trainee> trainees = new HashSet<>();
 
     public Trainer(User user, TrainingType specialization) {
