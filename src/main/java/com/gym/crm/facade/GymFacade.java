@@ -37,8 +37,9 @@ public class GymFacade {
         return traineeService.create(t);
     }
 
-    public void updateTrainee(Trainee t) {
+    public Trainee updateTrainee(Trainee t) {
         traineeService.update(t);
+        return t;
     }
 
     public void deleteTrainee(Long id) {
@@ -82,8 +83,9 @@ public class GymFacade {
         return trainerService.create(t);
     }
 
-    public void updateTrainer(Trainer t) {
+    public Trainer updateTrainer(Trainer t) {
         trainerService.update(t);
+        return t;
     }
 
     public Optional<Trainer> getTrainer(Long id) {
