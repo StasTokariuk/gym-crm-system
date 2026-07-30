@@ -65,6 +65,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
             }
 
             log.debug("User '{}' successfully authenticated for path: {}", username, path);
+            request.setAttribute("authenticatedUser", username);
             return true;
 
         } catch (Exception e) {
