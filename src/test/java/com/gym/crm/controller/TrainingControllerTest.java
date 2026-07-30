@@ -32,11 +32,13 @@ class TrainingControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(trainingController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(trainingController)
+                .setControllerAdvice(new GlobalExceptionHandler())
+                .build();
     }
 
     @Test
-    @DisplayName("GET /api/trainings/trainee - Should return list of trainee trainings")
+    @DisplayName("GET /api/trainings/trainee - Should return list of trainee trainings when authorized")
     void getTraineeTrainings_ShouldReturnList() throws Exception {
         Trainee trainee = new Trainee(new User("John", "Doe"), null, null);
 
@@ -53,7 +55,8 @@ class TrainingControllerTest {
                         .param("periodFrom", "2026-07-01")
                         .param("periodTo", "2026-07-31")
                         .param("trainerName", "Mike")
-                        .param("trainingType", "FITNESS"))
+                        .param("trainingType", "FITNESS")
+                        .requestAttr("authenticatedUser", "John.Doe"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainingName").value("Morning Cardio"))
                 .andExpect(jsonPath("$[0].trainingType").value("FITNESS"))
@@ -62,7 +65,16 @@ class TrainingControllerTest {
     }
 
     @Test
-    @DisplayName("GET /api/trainings/trainer - Should return list of trainer trainings")
+    @DisplayName("GET /api/trainings/trainee - Should return 403 Forbidden when unauthorized")
+    void getTraineeTrainings_Forbidden_ShouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/trainings/trainee")
+                        .param("username", "John.Doe")
+                        .requestAttr("authenticatedUser", "Other.User"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("GET /api/trainings/trainer - Should return list of trainer trainings when authorized")
     void getTrainerTrainings_ShouldReturnList() throws Exception {
         Trainee trainee = new Trainee(new User("John", "Doe"), null, null);
 
@@ -76,11 +88,21 @@ class TrainingControllerTest {
 
         mockMvc.perform(get("/api/trainings/trainer")
                         .param("username", "Mike.Brown")
-                        .param("traineeName", "John"))
+                        .param("traineeName", "John")
+                        .requestAttr("authenticatedUser", "Mike.Brown"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].trainingName").value("Evening Yoga"))
                 .andExpect(jsonPath("$[0].trainingType").value("YOGA"))
                 .andExpect(jsonPath("$[0].trainingDuration").value(45))
                 .andExpect(jsonPath("$[0].traineeName").value("John"));
+    }
+
+    @Test
+    @DisplayName("GET /api/trainings/trainer - Should return 403 Forbidden when unauthorized")
+    void getTrainerTrainings_Forbidden_ShouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/trainings/trainer")
+                        .param("username", "Mike.Brown")
+                        .requestAttr("authenticatedUser", "Other.User"))
+                .andExpect(status().isForbidden());
     }
 }

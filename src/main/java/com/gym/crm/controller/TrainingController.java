@@ -10,10 +10,12 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,21 +35,29 @@ public class TrainingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @RequestParam(required = false) String trainerName,
-            @RequestParam(required = false) String trainingType) {
+            @RequestParam(required = false) String trainingType,
+            javax.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to get trainee trainings for user: {}", username);
 
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         List<Training> trainings = gymFacade.getTraineeTrainings(username, periodFrom, periodTo, trainerName, trainingType);
 
-        List<TraineeTrainingResponse> response = trainings.stream()
+        List<TraineeTrainingResponse> response = trainings != null ? trainings.stream()
                 .map(t -> new TraineeTrainingResponse(
                         t.getTrainingName(),
                         t.getTrainingDate(),
-                        t.getTrainingType().getTrainingTypeName().name(),
+                        t.getTrainingType() != null && t.getTrainingType().getTrainingTypeName() != null
+                        ? t.getTrainingType().getTrainingTypeName().name() : null,
                         t.getTrainingDuration(),
-                        t.getTrainer().getUser().getFirstName()
+                        t.getTrainer() != null && t.getTrainer().getUser() != null
+                        ? t.getTrainer().getUser().getFirstName() : null
                 ))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : Collections.emptyList();
 
         return ResponseEntity.ok(response);
     }
@@ -58,21 +68,29 @@ public class TrainingController {
             @RequestParam String username,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
-            @RequestParam(required = false) String traineeName) {
+            @RequestParam(required = false) String traineeName,
+            javax.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to get trainer trainings for user: {}", username);
 
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         List<Training> trainings = gymFacade.getTrainerTrainings(username, periodFrom, periodTo, traineeName);
 
-        List<TrainerTrainingResponse> response = trainings.stream()
+        List<TrainerTrainingResponse> response = trainings != null ? trainings.stream()
                 .map(t -> new TrainerTrainingResponse(
                         t.getTrainingName(),
                         t.getTrainingDate(),
-                        t.getTrainingType().getTrainingTypeName().name(),
+                        t.getTrainingType() != null && t.getTrainingType().getTrainingTypeName() != null
+                        ? t.getTrainingType().getTrainingTypeName().name() : null,
                         t.getTrainingDuration(),
-                        t.getTrainee().getUser().getFirstName()
+                        t.getTrainee() != null && t.getTrainee().getUser() != null
+                        ? t.getTrainee().getUser().getFirstName() : null
                 ))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()) : Collections.emptyList();
 
         return ResponseEntity.ok(response);
     }
