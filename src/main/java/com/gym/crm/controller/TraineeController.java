@@ -61,8 +61,15 @@ public class TraineeController {
             @ApiResponse(code = 401, message = "Unauthorized access"),
             @ApiResponse(code = 404, message = "Trainee profile not found")
     })
-    public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@PathVariable String username) {
+    public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@PathVariable String username,
+                                                                    javax.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get trainee profile: {}", username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         Trainee trainee = gymFacade.getTraineeByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Trainee not found with username: " + username));
 
@@ -70,18 +77,22 @@ public class TraineeController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping
+    @PutMapping("/{username}")
     @ApiOperation(value = "Update an existing Trainee profile")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Trainee profile updated", response = TraineeProfileResponse.class),
-            @ApiResponse(code = 400, message = "Invalid input data"),
-            @ApiResponse(code = 401, message = "Unauthorized"),
-            @ApiResponse(code = 404, message = "Trainee not found")
-    })
-    public ResponseEntity<TraineeProfileResponse> updateTrainee(@Valid @RequestBody TraineeUpdateRequest request) {
-        log.info("REST request to update trainee: {}", request.getUsername());
-        Trainee existing = gymFacade.getTraineeByUsername(request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Trainee not found: " + request.getUsername()));
+    public ResponseEntity<TraineeProfileResponse> updateTrainee(
+            @PathVariable String username,
+            @Valid @RequestBody TraineeUpdateRequest request,
+            javax.servlet.http.HttpServletRequest servletRequest) {
+
+        log.info("REST request to update trainee: {}", username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
+        Trainee existing = gymFacade.getTraineeByUsername(username)
+                .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: " + username));
 
         existing.getUser().setFirstName(request.getFirstName());
         existing.getUser().setLastName(request.getLastName());
@@ -94,44 +105,68 @@ public class TraineeController {
     }
 
     @DeleteMapping("/{username}")
-    @ApiOperation(value = "Delete Trainee profile by username (hard delete and cascade trainings)")
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Trainee profile deleted successfully"),
-            @ApiResponse(code = 401, message = "Unauthorized"),
-            @ApiResponse(code = 404, message = "Trainee not found")
-    })
-    public ResponseEntity<Void> deleteTrainee(@PathVariable String username) {
+    @ApiOperation(value = "Delete Trainee profile")
+    public ResponseEntity<Void> deleteTrainee(@PathVariable String username,
+                                              javax.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to delete trainee: {}", username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         gymFacade.getTraineeByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Trainee not found: " + username));
+                .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: " + username));
 
         gymFacade.deleteTraineeByUsername(username);
         return ResponseEntity.ok().build();
     }
 
-    @PutMapping("/password")
+    @PutMapping("/{username}/password")
     @ApiOperation(value = "Change Trainee login password")
-    public ResponseEntity<Void> changePassword(@Valid @RequestBody PasswordChangeRequest request) {
-        log.info("REST request to change password for: {}", request.getUsername());
-        if (!gymFacade.authenticateTrainee(request.getUsername(), request.getOldPassword())) {
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<Void> changePassword(
+            @PathVariable String username,
+            @Valid @RequestBody PasswordChangeRequest request,
+            javax.servlet.http.HttpServletRequest servletRequest) {
+
+        log.info("REST request to change password for: {}", username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
-        gymFacade.changeTraineePassword(request.getUsername(), request.getNewPassword());
+
+        gymFacade.changeTraineePassword(username, request.getNewPassword());
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{username}/status")
     @ApiOperation(value = "Activate or Deactivate Trainee profile")
-    public ResponseEntity<Void> updateStatus(@PathVariable String username, @RequestParam boolean isActive) {
+    public ResponseEntity<Void> updateStatus(@PathVariable String username,
+                                             @RequestParam boolean isActive,
+                                             javax.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to set active={} for trainee: {}", isActive, username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
+
         gymFacade.updateTraineeStatus(username, isActive);
         return ResponseEntity.ok().build();
     }
 
     @PutMapping("/{username}/trainers")
     @ApiOperation(value = "Update Trainee's list of assigned Trainers")
-    public ResponseEntity<List<TrainerShortInfo>> updateTrainersList(@PathVariable String username, @RequestBody List<String> trainerUsernames) {
+    public ResponseEntity<List<TrainerShortInfo>> updateTrainersList(@PathVariable String username,
+                                                                     @RequestBody List<String> trainerUsernames,
+                                                                     javax.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to update trainers for trainee: {}", username);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!username.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
         gymFacade.updateTraineeTrainers(username, trainerUsernames);
 
         Trainee updated = gymFacade.getTraineeByUsername(username)
