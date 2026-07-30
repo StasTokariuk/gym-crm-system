@@ -71,7 +71,7 @@ public class TraineeController {
         }
 
         Trainee trainee = gymFacade.getTraineeByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Trainee not found with username: " + username));
+                .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found with username: " + username));
 
         TraineeProfileResponse response = mapToProfileResponse(trainee);
         return ResponseEntity.ok(response);
