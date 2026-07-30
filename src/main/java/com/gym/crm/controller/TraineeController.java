@@ -21,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -132,7 +133,7 @@ public class TraineeController {
         log.info("REST request to change password for: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
-        if (!username.equals(authenticatedUser)) {
+        if (!username.equals(authenticatedUser) || !username.equals(request.getUsername())) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -170,16 +171,19 @@ public class TraineeController {
         gymFacade.updateTraineeTrainers(username, trainerUsernames);
 
         Trainee updated = gymFacade.getTraineeByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Trainee not found: " + username));
+                .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: " + username));
 
-        List<TrainerShortInfo> response = updated.getTrainers().stream()
-                .map(t -> new TrainerShortInfo(
-                        t.getUser().getUsername(),
-                        t.getUser().getFirstName(),
-                        t.getUser().getLastName(),
-                        t.getSpecialization().getTrainingTypeName().name()
-                ))
-                .collect(Collectors.toList());
+        List<TrainerShortInfo> response = updated.getTrainers() != null ?
+                updated.getTrainers().stream()
+                        .map(t -> new TrainerShortInfo(
+                                t.getUser().getUsername(),
+                                t.getUser().getFirstName(),
+                                t.getUser().getLastName(),
+                                t.getSpecialization().getTrainingTypeName().name()
+                        ))
+                        .collect(Collectors.toList())
+                : Collections.emptyList();
+
         return ResponseEntity.ok(response);
     }
 
@@ -191,14 +195,17 @@ public class TraineeController {
         response.setAddress(trainee.getAddress());
         response.setActive(trainee.getUser().isActive());
 
-        List<TrainerShortInfo> trainers = trainee.getTrainers().stream()
-                .map(t -> new TrainerShortInfo(
-                        t.getUser().getUsername(),
-                        t.getUser().getFirstName(),
-                        t.getUser().getLastName(),
-                        t.getSpecialization().getTrainingTypeName().name()
-                ))
-                .collect(Collectors.toList());
+        List<TrainerShortInfo> trainers = trainee.getTrainers() != null ?
+                trainee.getTrainers().stream()
+                        .map(t -> new TrainerShortInfo(
+                                t.getUser().getUsername(),
+                                t.getUser().getFirstName(),
+                                t.getUser().getLastName(),
+                                t.getSpecialization().getTrainingTypeName().name()
+                        ))
+                        .collect(Collectors.toList())
+                : Collections.emptyList();
+
         response.setTrainers(trainers);
         return response;
     }

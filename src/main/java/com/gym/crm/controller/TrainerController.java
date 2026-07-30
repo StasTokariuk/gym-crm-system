@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,7 +76,7 @@ public class TrainerController {
         }
 
         Trainer trainer = gymFacade.getTrainerByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Trainer not found with username: " + username));
+                .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainer not found with username: " + username));
 
         TrainerProfileResponse response = mapToProfileResponse(trainer);
         return ResponseEntity.ok(response);
@@ -116,7 +117,7 @@ public class TrainerController {
         log.info("REST request to change password for: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
-        if (!username.equals(authenticatedUser)) {
+        if (!username.equals(authenticatedUser) || !username.equals(request.getUsername())) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -143,8 +144,14 @@ public class TrainerController {
 
     @GetMapping("/not-assigned/{traineeUsername}")
     @ApiOperation(value = "Get active trainers not assigned to a specific trainee")
-    public ResponseEntity<List<TrainerShortInfo>> getNotAssignedTrainers(@PathVariable String traineeUsername) {
+    public ResponseEntity<List<TrainerShortInfo>> getNotAssignedTrainers(@PathVariable String traineeUsername,
+                                                                         javax.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get active trainers not assigned to trainee: {}", traineeUsername);
+
+        String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
+        if (!traineeUsername.equals(authenticatedUser)) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
 
         List<Trainer> trainers = gymFacade.getActiveTrainersNotAssignedToTrainee(traineeUsername);
 
@@ -166,13 +173,16 @@ public class TrainerController {
         response.setSpecialization(trainer.getSpecialization().getTrainingTypeName().name());
         response.setActive(trainer.getUser().isActive());
 
-        List<TraineeShortInfo> trainees = trainer.getTrainees().stream()
-                .map(t -> new TraineeShortInfo(
-                        t.getUser().getUsername(),
-                        t.getUser().getFirstName(),
-                        t.getUser().getLastName()
-                ))
-                .collect(Collectors.toList());
+        List<TraineeShortInfo> trainees = trainer.getTrainees() != null ?
+                trainer.getTrainees().stream()
+                        .map(t -> new TraineeShortInfo(
+                                t.getUser().getUsername(),
+                                t.getUser().getFirstName(),
+                                t.getUser().getLastName()
+                        ))
+                        .collect(Collectors.toList())
+                : Collections.emptyList();
+
         response.setTrainees(trainees);
         return response;
     }
