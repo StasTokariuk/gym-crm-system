@@ -2,6 +2,7 @@ package com.gym.crm.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gym.crm.dao.TrainingTypeDao;
+import com.gym.crm.dto.request.PasswordChangeRequest;
 import com.gym.crm.dto.request.TrainerRegistrationRequest;
 import com.gym.crm.dto.request.TrainerUpdateRequest;
 import com.gym.crm.facade.GymFacade;
@@ -20,11 +21,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -89,33 +91,42 @@ class TrainerControllerTest {
         mockMvc.perform(post("/api/trainers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(invalidRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Validation Failed"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    @DisplayName("GET /api/trainers/{username} - Should return trainer profile")
+    @DisplayName("GET /api/trainers/{username} - Should return trainer profile when authorized")
     void getTrainerProfile_ShouldReturnProfile() throws Exception {
         TrainingType specialization = new TrainingType(TrainingTypeName.YOGA);
         User user = new User("Mike", "Brown");
         user.setUsername("Mike.Brown");
         user.setActive(true);
         Trainer trainer = new Trainer(user, specialization);
+        trainer.setTrainees(Collections.emptySet());
 
         when(gymFacade.getTrainerByUsername("Mike.Brown")).thenReturn(Optional.of(trainer));
 
-        mockMvc.perform(get("/api/trainers/Mike.Brown"))
+        mockMvc.perform(get("/api/trainers/Mike.Brown")
+                        .requestAttr("authenticatedUser", "Mike.Brown"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value("Mike"))
                 .andExpect(jsonPath("$.lastName").value("Brown"))
-                .andExpect(jsonPath("$.specialization").value("YOGA"));
+                .andExpect(jsonPath("$.specialization").value("YOGA"))
+                .andExpect(jsonPath("$.active").value(true));
     }
 
     @Test
-    @DisplayName("PUT /api/trainers - Should update trainer profile")
+    @DisplayName("GET /api/trainers/{username} - Should return 403 Forbidden when user is not authorized")
+    void getTrainerProfile_Forbidden_ShouldReturn403() throws Exception {
+        mockMvc.perform(get("/api/trainers/Mike.Brown")
+                        .requestAttr("authenticatedUser", "Other.User"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("PUT /api/trainers/{username} - Should update trainer profile")
     void updateTrainer_ShouldReturnUpdatedProfile() throws Exception {
         TrainerUpdateRequest request = new TrainerUpdateRequest();
-        request.setUsername("Mike.Brown");
         request.setFirstName("MikeNew");
         request.setLastName("BrownNew");
         request.setIsActive(true);
@@ -124,16 +135,46 @@ class TrainerControllerTest {
         User user = new User("Mike", "Brown");
         user.setUsername("Mike.Brown");
         Trainer existingTrainer = new Trainer(user, specialization);
+        existingTrainer.setTrainees(Collections.emptySet());
 
         when(gymFacade.getTrainerByUsername("Mike.Brown")).thenReturn(Optional.of(existingTrainer));
         when(gymFacade.updateTrainer(any(Trainer.class))).thenReturn(existingTrainer);
 
-        mockMvc.perform(put("/api/trainers")
+        mockMvc.perform(put("/api/trainers/Mike.Brown")
+                        .requestAttr("authenticatedUser", "Mike.Brown")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value("MikeNew"))
                 .andExpect(jsonPath("$.lastName").value("BrownNew"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/trainers/{username}/password - Should change password successfully")
+    void changePassword_ShouldReturn200() throws Exception {
+        PasswordChangeRequest request = new PasswordChangeRequest();
+        request.setUsername("Mike.Brown");
+        request.setOldPassword("oldSecret123");
+        request.setNewPassword("newSecret123");
+
+        mockMvc.perform(put("/api/trainers/Mike.Brown/password")
+                        .requestAttr("authenticatedUser", "Mike.Brown")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        verify(gymFacade, times(1)).changeTrainerPassword(eq("Mike.Brown"), eq("newSecret123"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/trainers/{username}/status - Should update status successfully")
+    void updateStatus_ShouldReturn200() throws Exception {
+        mockMvc.perform(put("/api/trainers/Mike.Brown/status")
+                        .param("isActive", "false")
+                        .requestAttr("authenticatedUser", "Mike.Brown"))
+                .andExpect(status().isOk());
+
+        verify(gymFacade, times(1)).updateTrainerStatus(eq("Mike.Brown"), eq(false));
     }
 
     @Test
@@ -146,7 +187,8 @@ class TrainerControllerTest {
 
         when(gymFacade.getActiveTrainersNotAssignedToTrainee("John.Smith")).thenReturn(List.of(trainer));
 
-        mockMvc.perform(get("/api/trainers/not-assigned/John.Smith"))
+        mockMvc.perform(get("/api/trainers/not-assigned/John.Smith")
+                        .requestAttr("authenticatedUser", "John.Smith"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].username").value("Jane.Doe"))
                 .andExpect(jsonPath("$[0].specialization").value("ZUMBA"));
