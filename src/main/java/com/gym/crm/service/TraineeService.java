@@ -48,7 +48,7 @@ public class TraineeService {
     @Transactional
     public Trainee update(Trainee trainee) {
         if (trainee.getId() == null || traineeDao.findById(trainee.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Trainee not found: id=" + trainee.getId());
+            throw new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: id=" + trainee.getId());
         }
         Trainee saved = traineeDao.save(trainee);
         log.info("Updated trainee username={}", saved.getUser().getUsername());
