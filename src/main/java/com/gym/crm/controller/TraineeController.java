@@ -20,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -63,7 +63,7 @@ public class TraineeController {
             @ApiResponse(code = 404, message = "Trainee profile not found")
     })
     public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@PathVariable String username,
-                                                                    javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                    jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get trainee profile: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -83,7 +83,7 @@ public class TraineeController {
     public ResponseEntity<TraineeProfileResponse> updateTrainee(
             @PathVariable String username,
             @Valid @RequestBody TraineeUpdateRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to update trainee: {}", username);
 
@@ -108,7 +108,7 @@ public class TraineeController {
     @DeleteMapping("/{username}")
     @ApiOperation(value = "Delete Trainee profile")
     public ResponseEntity<Void> deleteTrainee(@PathVariable String username,
-                                              javax.servlet.http.HttpServletRequest servletRequest) {
+                                              jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to delete trainee: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -128,7 +128,7 @@ public class TraineeController {
     public ResponseEntity<Void> changePassword(
             @PathVariable String username,
             @Valid @RequestBody PasswordChangeRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to change password for: {}", username);
 
@@ -145,7 +145,7 @@ public class TraineeController {
     @ApiOperation(value = "Activate or Deactivate Trainee profile")
     public ResponseEntity<Void> updateStatus(@PathVariable String username,
                                              @RequestParam boolean isActive,
-                                             javax.servlet.http.HttpServletRequest servletRequest) {
+                                             jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to set active={} for trainee: {}", isActive, username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -161,7 +161,7 @@ public class TraineeController {
     @ApiOperation(value = "Update Trainee's list of assigned Trainers")
     public ResponseEntity<List<TrainerShortInfo>> updateTrainersList(@PathVariable String username,
                                                                      @RequestBody List<String> trainerUsernames,
-                                                                     javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                     jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to update trainers for trainee: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");

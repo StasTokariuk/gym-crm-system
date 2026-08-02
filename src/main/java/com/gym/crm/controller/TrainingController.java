@@ -36,7 +36,7 @@ public class TrainingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @RequestParam(required = false) String trainerName,
             @RequestParam(required = false) String trainingType,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to get trainee trainings for user: {}", username);
 
@@ -69,7 +69,7 @@ public class TrainingController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate periodTo,
             @RequestParam(required = false) String traineeName,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to get trainer trainings for user: {}", username);
 

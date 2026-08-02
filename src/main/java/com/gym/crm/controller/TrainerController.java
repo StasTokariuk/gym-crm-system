@@ -24,7 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,7 +67,7 @@ public class TrainerController {
     @GetMapping("/{username}")
     @ApiOperation(value = "Get Trainer profile details by username")
     public ResponseEntity<TrainerProfileResponse> getTrainerProfile(@PathVariable String username,
-                                                                    javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                    jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get trainer profile: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -87,7 +87,7 @@ public class TrainerController {
     public ResponseEntity<TrainerProfileResponse> updateTrainer(
             @PathVariable String username,
             @Valid @RequestBody TrainerUpdateRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to update trainer: {}", username);
 
@@ -112,7 +112,7 @@ public class TrainerController {
     public ResponseEntity<Void> changePassword(
             @PathVariable String username,
             @Valid @RequestBody PasswordChangeRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to change password for: {}", username);
 
@@ -129,7 +129,7 @@ public class TrainerController {
     @ApiOperation(value = "Activate or Deactivate Trainer profile")
     public ResponseEntity<Void> updateStatus(@PathVariable String username,
                                              @RequestParam boolean isActive,
-                                             javax.servlet.http.HttpServletRequest servletRequest) {
+                                             jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to set active={} for trainer: {}", isActive, username);
 
@@ -145,7 +145,7 @@ public class TrainerController {
     @GetMapping("/not-assigned/{traineeUsername}")
     @ApiOperation(value = "Get active trainers not assigned to a specific trainee")
     public ResponseEntity<List<TrainerShortInfo>> getNotAssignedTrainers(@PathVariable String traineeUsername,
-                                                                         javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                         jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get active trainers not assigned to trainee: {}", traineeUsername);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");

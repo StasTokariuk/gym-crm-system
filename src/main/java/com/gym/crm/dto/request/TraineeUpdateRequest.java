@@ -2,7 +2,7 @@ package com.gym.crm.dto.request;
 
 import lombok.Getter;
 import lombok.Setter;
-import javax.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
 
 @Getter
@@ -17,6 +17,6 @@ public class TraineeUpdateRequest {
     private LocalDate dateOfBirth;
     private String address;
 
-    @javax.validation.constraints.NotNull(message = "Active status is required")
+    @jakarta.validation.constraints.NotNull(message = "Active status is required")
     private Boolean isActive;
 }
