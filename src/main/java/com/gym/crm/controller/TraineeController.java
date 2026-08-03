@@ -134,7 +134,7 @@ public class TraineeController {
         log.info("REST request to change password for: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
-        if (!username.equals(authenticatedUser) || !username.equals(request.getUsername())) {
+        if (!username.equals(authenticatedUser)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 

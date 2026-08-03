@@ -47,17 +47,15 @@ public class TrainingController {
 
         List<Training> trainings = gymFacade.getTraineeTrainings(username, periodFrom, periodTo, trainerName, trainingType);
 
-        List<TraineeTrainingResponse> response = trainings != null ? trainings.stream()
+        List<TraineeTrainingResponse> response = trainings.stream()
                 .map(t -> new TraineeTrainingResponse(
                         t.getTrainingName(),
                         t.getTrainingDate(),
-                        t.getTrainingType() != null && t.getTrainingType().getTrainingTypeName() != null
-                        ? t.getTrainingType().getTrainingTypeName().name() : null,
+                        t.getTrainingType().getTrainingTypeName().name(),
                         t.getTrainingDuration(),
-                        t.getTrainer() != null && t.getTrainer().getUser() != null
-                        ? t.getTrainer().getUser().getFirstName() : null
+                        t.getTrainer().getUser().getFirstName()
                 ))
-                .collect(Collectors.toList()) : Collections.emptyList();
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
@@ -80,17 +78,15 @@ public class TrainingController {
 
         List<Training> trainings = gymFacade.getTrainerTrainings(username, periodFrom, periodTo, traineeName);
 
-        List<TrainerTrainingResponse> response = trainings != null ? trainings.stream()
+        List<TrainerTrainingResponse> response = trainings.stream()
                 .map(t -> new TrainerTrainingResponse(
                         t.getTrainingName(),
                         t.getTrainingDate(),
-                        t.getTrainingType() != null && t.getTrainingType().getTrainingTypeName() != null
-                        ? t.getTrainingType().getTrainingTypeName().name() : null,
+                        t.getTrainingType().getTrainingTypeName().name(),
                         t.getTrainingDuration(),
-                        t.getTrainee() != null && t.getTrainee().getUser() != null
-                        ? t.getTrainee().getUser().getFirstName() : null
+                        t.getTrainee().getUser().getFirstName()
                 ))
-                .collect(Collectors.toList()) : Collections.emptyList();
+                .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }

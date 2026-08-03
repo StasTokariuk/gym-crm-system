@@ -172,7 +172,6 @@ class TraineeControllerTest {
     @DisplayName("PUT /api/trainees/{username}/password - Should change password successfully")
     void changePassword_ShouldReturn200() throws Exception {
         PasswordChangeRequest request = new PasswordChangeRequest();
-        request.setUsername("John.Doe");
         request.setOldPassword("oldSecret123");
         request.setNewPassword("newSecret123");
 
