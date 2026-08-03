@@ -1,15 +1,15 @@
 package com.gym.crm.dao;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import java.util.List;
 import java.util.Optional;
 
 public abstract class AbstractDao<T> {
 
-    @Autowired
-    protected SessionFactory sessionFactory;
+    @PersistenceContext
+    protected EntityManager entityManager;
 
     protected final Class<T> clazz;
 
@@ -17,31 +17,41 @@ public abstract class AbstractDao<T> {
         this.clazz = clazz;
     }
 
-    protected Session getCurrentSession() {
-        return sessionFactory.getCurrentSession();
-    }
-
     public T save(T entity) {
-        getCurrentSession().saveOrUpdate(entity);
-        return entity;
+        if (getId(entity) == null) {
+            entityManager.persist(entity);
+            return entity;
+        } else {
+            return entityManager.merge(entity);
+        }
     }
 
     public Optional<T> findById(Long id) {
-        return Optional.ofNullable(getCurrentSession().get(clazz, id));
+        return Optional.ofNullable(entityManager.find(clazz, id));
     }
 
     public List<T> findAll() {
-        return getCurrentSession().createQuery("from " + clazz.getName(), clazz).getResultList();
+        return entityManager.createQuery("from " + clazz.getName(), clazz).getResultList();
     }
 
     public void delete(T entity) {
-        getCurrentSession().delete(entity);
+        T managed = entityManager.contains(entity) ? entity : entityManager.merge(entity);
+        entityManager.remove(managed);
     }
 
     public void deleteById(Long id) {
-        T entity = getCurrentSession().get(clazz, id);
+        T entity = entityManager.find(clazz, id);
         if (entity != null) {
-            delete(entity);
+            entityManager.remove(entity);
         }
+    }
+
+    /**
+     * Extracts the id via JPA metamodel so save() can decide persist vs merge.
+     */
+    private Object getId(T entity) {
+        return entityManager.getEntityManagerFactory()
+                .getPersistenceUnitUtil()
+                .getIdentifier(entity);
     }
 }

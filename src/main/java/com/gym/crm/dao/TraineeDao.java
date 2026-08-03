@@ -4,6 +4,7 @@ import com.gym.crm.model.Trainee;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 @Repository
@@ -30,9 +31,10 @@ public class TraineeDao extends AbstractDao<Trainee> {
 
     public Optional<Trainee> findByUsername(String username) {
         log.debug("Finding trainee by username: {}", username);
-        return getCurrentSession()
+        return entityManager
                 .createQuery("SELECT t FROM Trainee t JOIN t.user u WHERE u.username = :username", Trainee.class)
                 .setParameter("username", username)
-                .uniqueResultOptional();
+                .getResultStream()
+                .findFirst();
     }
 }
