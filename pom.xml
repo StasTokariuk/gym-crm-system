@@ -53,10 +53,9 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- Spring Security 6 config -->
         <dependency>
             <groupId>org.springframework.security</groupId>
-            <artifactId>spring-security-config</artifactId>
+            <artifactId>spring-security-crypto</artifactId>
         </dependency>
 
         <!-- PostgreSQL -->
