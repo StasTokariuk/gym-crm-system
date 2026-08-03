@@ -13,10 +13,11 @@ import com.gym.crm.model.Trainer;
 import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
 import com.gym.crm.model.User;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/trainers")
 @RequiredArgsConstructor
-@Api(tags = "Trainer Management", description = "Endpoints for Trainer profiles and operations")
+@Tag(name = "Trainer Management", description = "Endpoints for Trainer profiles and operations")
 public class TrainerController {
 
     private static final Logger log = LoggerFactory.getLogger(TrainerController.class);
@@ -40,10 +40,10 @@ public class TrainerController {
     private final TrainingTypeDao trainingTypeDao;
 
     @PostMapping
-    @ApiOperation(value = "Register a new Trainer profile")
+    @Operation(summary = "Register a new Trainer profile")
     @ApiResponses({
-            @ApiResponse(code = 201, message = "Trainer registered successfully", response = TrainerRegistrationResponse.class),
-            @ApiResponse(code = 400, message = "Invalid input data")
+            @ApiResponse(responseCode = "201", description = "Trainer registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     public ResponseEntity<TrainerRegistrationResponse> registerTrainer(@Valid @RequestBody TrainerRegistrationRequest request) {
         log.info("REST request to register trainer: {} {}", request.getFirstName(), request.getLastName());
@@ -65,7 +65,7 @@ public class TrainerController {
     }
 
     @GetMapping("/{username}")
-    @ApiOperation(value = "Get Trainer profile details by username")
+    @Operation(summary = "Get Trainer profile details by username")
     public ResponseEntity<TrainerProfileResponse> getTrainerProfile(@PathVariable String username,
                                                                     jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get trainer profile: {}", username);
@@ -83,7 +83,7 @@ public class TrainerController {
     }
 
     @PutMapping("/{username}")
-    @ApiOperation(value = "Update an existing Trainer profile")
+    @Operation(summary = "Update an existing Trainer profile")
     public ResponseEntity<TrainerProfileResponse> updateTrainer(
             @PathVariable String username,
             @Valid @RequestBody TrainerUpdateRequest request,
@@ -108,7 +108,7 @@ public class TrainerController {
     }
 
     @PutMapping("/{username}/password")
-    @ApiOperation(value = "Change Trainer login password")
+    @Operation(summary = "Change Trainer login password")
     public ResponseEntity<Void> changePassword(
             @PathVariable String username,
             @Valid @RequestBody PasswordChangeRequest request,
@@ -126,7 +126,7 @@ public class TrainerController {
     }
 
     @PutMapping("/{username}/status")
-    @ApiOperation(value = "Activate or Deactivate Trainer profile")
+    @Operation(summary = "Activate or Deactivate Trainer profile")
     public ResponseEntity<Void> updateStatus(@PathVariable String username,
                                              @RequestParam boolean isActive,
                                              jakarta.servlet.http.HttpServletRequest servletRequest) {
@@ -143,7 +143,7 @@ public class TrainerController {
     }
 
     @GetMapping("/not-assigned/{traineeUsername}")
-    @ApiOperation(value = "Get active trainers not assigned to a specific trainee")
+    @Operation(summary = "Get active trainers not assigned to a specific trainee")
     public ResponseEntity<List<TrainerShortInfo>> getNotAssignedTrainers(@PathVariable String traineeUsername,
                                                                          jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get active trainers not assigned to trainee: {}", traineeUsername);
