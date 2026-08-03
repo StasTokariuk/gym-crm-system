@@ -2,7 +2,8 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainingDao;
 import com.gym.crm.model.Training;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.slf4j.Logger;
@@ -17,7 +18,6 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrainingService {
 
@@ -25,10 +25,22 @@ public class TrainingService {
 
     private final TrainingDao trainingDao;
     private final SessionFactory sessionFactory;
+    private final Counter trainingCreationCounter;
+
+    public TrainingService(TrainingDao trainingDao,
+                           SessionFactory sessionFactory,
+                           MeterRegistry meterRegistry) {
+        this.trainingDao = trainingDao;
+        this.sessionFactory = sessionFactory;
+        this.trainingCreationCounter = Counter.builder("gym.training.created")
+                .description("Total number of created trainings")
+                .register(meterRegistry);
+    }
 
     @Transactional
     public Training create(Training training) {
         Training saved = trainingDao.save(training);
+        trainingCreationCounter.increment();
         log.info("Created training id={}", saved.getId());
         return saved;
     }

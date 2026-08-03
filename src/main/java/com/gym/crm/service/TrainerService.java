@@ -3,7 +3,8 @@ package com.gym.crm.service;
 import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.User;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrainerService {
 
@@ -23,6 +23,20 @@ public class TrainerService {
     private final TrainerDao trainerDao;
     private final PasswordEncoder passwordEncoder;
     private final UserProfileService userProfileService;
+
+    private final Counter trainerRegistrationCounter;
+
+    public TrainerService(TrainerDao trainerDao,
+                          PasswordEncoder passwordEncoder,
+                          UserProfileService userProfileService,
+                          MeterRegistry meterRegistry) {
+        this.trainerDao = trainerDao;
+        this.passwordEncoder = passwordEncoder;
+        this.userProfileService = userProfileService;
+        this.trainerRegistrationCounter = Counter.builder("gym.trainer.registrations")
+                .description("Total number of registered trainers")
+                .register(meterRegistry);
+    }
 
     @Transactional
     public Trainer create(Trainer trainer) {
@@ -37,6 +51,7 @@ public class TrainerService {
         user.setActive(true);
 
         Trainer saved = trainerDao.save(trainer);
+        trainerRegistrationCounter.increment();
         log.info("Created trainer profile: username={}, temporary password={}", username, rawPassword);
         return saved;
     }
