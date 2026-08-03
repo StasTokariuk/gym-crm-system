@@ -174,16 +174,14 @@ public class TraineeController {
         Trainee updated = gymFacade.getTraineeByUsername(username)
                 .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: " + username));
 
-        List<TrainerShortInfo> response = updated.getTrainers() != null ?
-                updated.getTrainers().stream()
+        List<TrainerShortInfo> response = updated.getTrainers().stream()
                         .map(t -> new TrainerShortInfo(
                                 t.getUser().getUsername(),
                                 t.getUser().getFirstName(),
                                 t.getUser().getLastName(),
                                 t.getSpecialization().getTrainingTypeName().name()
                         ))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
+                        .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
@@ -196,16 +194,14 @@ public class TraineeController {
         response.setAddress(trainee.getAddress());
         response.setActive(trainee.getUser().isActive());
 
-        List<TrainerShortInfo> trainers = trainee.getTrainers() != null ?
-                trainee.getTrainers().stream()
+        List<TrainerShortInfo> trainers = trainee.getTrainers().stream()
                         .map(t -> new TrainerShortInfo(
                                 t.getUser().getUsername(),
                                 t.getUser().getFirstName(),
                                 t.getUser().getLastName(),
                                 t.getSpecialization().getTrainingTypeName().name()
                         ))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
+                        .collect(Collectors.toList());
 
         response.setTrainers(trainers);
         return response;

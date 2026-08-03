@@ -173,15 +173,13 @@ public class TrainerController {
         response.setSpecialization(trainer.getSpecialization().getTrainingTypeName().name());
         response.setActive(trainer.getUser().isActive());
 
-        List<TraineeShortInfo> trainees = trainer.getTrainees() != null ?
-                trainer.getTrainees().stream()
+        List<TraineeShortInfo> trainees = trainer.getTrainees().stream()
                         .map(t -> new TraineeShortInfo(
                                 t.getUser().getUsername(),
                                 t.getUser().getFirstName(),
                                 t.getUser().getLastName()
                         ))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
+                        .collect(Collectors.toList());
 
         response.setTrainees(trainees);
         return response;
