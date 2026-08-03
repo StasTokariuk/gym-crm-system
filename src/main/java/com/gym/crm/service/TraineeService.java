@@ -5,7 +5,9 @@ import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.Trainer;
 import com.gym.crm.model.User;
-import lombok.RequiredArgsConstructor;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,7 +19,6 @@ import java.util.Optional;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TraineeService {
 
@@ -28,21 +29,46 @@ public class TraineeService {
     private final PasswordEncoder passwordEncoder;
     private final UserProfileService userProfileService;
 
+    private final Counter traineeRegistrationCounter;
+    private final Timer traineeCreationTimer;
+
+    public TraineeService(TraineeDao traineeDao,
+                          TrainerDao trainerDao,
+                          PasswordEncoder passwordEncoder,
+                          UserProfileService userProfileService,
+                          MeterRegistry meterRegistry) {
+        this.traineeDao = traineeDao;
+        this.trainerDao = trainerDao;
+        this.passwordEncoder = passwordEncoder;
+        this.userProfileService = userProfileService;
+
+        this.traineeRegistrationCounter = Counter.builder("gym.trainee.registrations")
+                .description("Total number of registered trainees")
+                .register(meterRegistry);
+
+        this.traineeCreationTimer = Timer.builder("gym.trainee.creation.time")
+                .description("Time taken to create a trainee profile")
+                .register(meterRegistry);
+    }
+
     @Transactional
     public Trainee create(Trainee trainee) {
-        User user = trainee.getUser();
-        String username = userProfileService.buildUsername(
-                user.getFirstName(), user.getLastName(),
-                candidate -> traineeDao.findByUsername(candidate).isPresent());
+        return traineeCreationTimer.record(() -> {
+            User user = trainee.getUser();
+            String username = userProfileService.buildUsername(
+                    user.getFirstName(), user.getLastName(),
+                    candidate -> traineeDao.findByUsername(candidate).isPresent());
 
-        user.setUsername(username);
-        String rawPassword = userProfileService.generatePassword();
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setActive(true);
+            user.setUsername(username);
+            String rawPassword = userProfileService.generatePassword();
+            user.setPassword(passwordEncoder.encode(rawPassword));
+            user.setActive(true);
 
-        Trainee saved = traineeDao.save(trainee);
-        log.info("Created trainee profile: username={}, temporary password={}", username, rawPassword);
-        return saved;
+            Trainee saved = traineeDao.save(trainee);
+            traineeRegistrationCounter.increment();
+            log.info("Created trainee profile: username={}, temporary password={}", username, rawPassword);
+            return saved;
+        });
     }
 
     @Transactional

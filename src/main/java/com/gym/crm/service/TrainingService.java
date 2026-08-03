@@ -2,9 +2,11 @@ package com.gym.crm.service;
 
 import com.gym.crm.dao.TrainingDao;
 import com.gym.crm.model.Training;
-import lombok.RequiredArgsConstructor;
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -17,18 +19,28 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class TrainingService {
 
     private static final Logger log = LoggerFactory.getLogger(TrainingService.class);
 
     private final TrainingDao trainingDao;
-    private final SessionFactory sessionFactory;
+    private final Counter trainingCreationCounter;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public TrainingService(TrainingDao trainingDao, MeterRegistry meterRegistry) {
+        this.trainingDao = trainingDao;
+        this.trainingCreationCounter = Counter.builder("gym.training.created")
+                .description("Total number of created trainings")
+                .register(meterRegistry);
+    }
 
     @Transactional
     public Training create(Training training) {
         Training saved = trainingDao.save(training);
+        trainingCreationCounter.increment();
         log.info("Created training id={}", saved.getId());
         return saved;
     }
@@ -44,7 +56,6 @@ public class TrainingService {
     public List<Training> getTraineeTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                               String trainerName, String trainingTypeName) {
         log.debug("Filtering trainee trainings for: {}", username);
-        Session session = sessionFactory.getCurrentSession();
 
         StringBuilder hql = new StringBuilder(
                 "SELECT t FROM Training t JOIN t.trainee tn JOIN tn.user u " +
@@ -70,7 +81,7 @@ public class TrainingService {
             parameters.put("typeName", com.gym.crm.model.TrainingTypeName.valueOf(trainingTypeName.toUpperCase()));
         }
 
-        var query = session.createQuery(hql.toString(), Training.class);
+        TypedQuery<Training> query = entityManager.createQuery(hql.toString(), Training.class);
         parameters.forEach(query::setParameter);
         return query.getResultList();
     }
@@ -78,7 +89,6 @@ public class TrainingService {
     public List<Training> getTrainerTrainings(String username, LocalDate fromDate, LocalDate toDate,
                                               String traineeName) {
         log.debug("Filtering trainer trainings for: {}", username);
-        Session session = sessionFactory.getCurrentSession();
 
         StringBuilder hql = new StringBuilder(
                 "SELECT t FROM Training t JOIN t.trainer tr JOIN tr.user u " +
@@ -100,7 +110,7 @@ public class TrainingService {
             parameters.put("traineeName", traineeName);
         }
 
-        var query = session.createQuery(hql.toString(), Training.class);
+        TypedQuery<Training> query = entityManager.createQuery(hql.toString(), Training.class);
         parameters.forEach(query::setParameter);
         return query.getResultList();
     }

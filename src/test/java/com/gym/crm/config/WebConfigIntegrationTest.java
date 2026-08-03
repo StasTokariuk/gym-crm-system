@@ -3,18 +3,16 @@ package com.gym.crm.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.context.web.WebAppConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.context.WebApplicationContext;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {AppConfig.class, DatabaseConfig.class, WebConfig.class})
-@WebAppConfiguration
+@SpringBootTest
+@ActiveProfiles("test")
 class WebConfigIntegrationTest {
 
     @Autowired
@@ -24,7 +22,7 @@ class WebConfigIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    @DisplayName("Web Application Context should load successfully")
+    @DisplayName("Web context loads all controllers")
     void contextLoads() {
         assertNotNull(wac);
         assertTrue(wac.containsBean("traineeController"));
@@ -34,10 +32,10 @@ class WebConfigIntegrationTest {
     }
 
     @Test
-    @DisplayName("ObjectMapper bean should be configured and support LocalDate module")
-    void objectMapper_ConfiguredCorrectly() {
+    @DisplayName("Boot auto-configured ObjectMapper supports Java 8 date/time (jsr310)")
+    void objectMapper_SupportsJavaTime() {
         assertNotNull(objectMapper);
         assertTrue(objectMapper.getRegisteredModuleIds().stream()
-                .anyMatch(id -> id.toString().contains("jackson-datatype-jsr310")));
+                .anyMatch(id -> id.toString().contains("jsr310")));
     }
 }

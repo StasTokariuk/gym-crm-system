@@ -9,10 +9,11 @@ import com.gym.crm.dto.response.TrainerShortInfo;
 import com.gym.crm.facade.GymFacade;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.User;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,25 +21,24 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/trainees")
 @RequiredArgsConstructor
-@Api(tags = "Trainee Management", description = "Endpoints for Trainee profiles and operations")
+@Tag(name = "Trainee Management", description = "Endpoints for Trainee profiles and operations")
 public class TraineeController {
 
     private static final Logger log = LoggerFactory.getLogger(TraineeController.class);
     private final GymFacade gymFacade;
 
     @PostMapping
-    @ApiOperation(value = "Register a new Trainee profile", notes = "Generates username and temporary password automatically.")
+    @Operation(summary = "Register a new Trainee profile",
+            description = "Generates username and temporary password automatically.")
     @ApiResponses({
-            @ApiResponse(code = 201, message = "Trainee registered successfully", response = TraineeRegistrationResponse.class),
-            @ApiResponse(code = 400, message = "Invalid input data")
+            @ApiResponse(responseCode = "201", description = "Trainee registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
     public ResponseEntity<TraineeRegistrationResponse> registerTrainee(@Valid @RequestBody TraineeRegistrationRequest request) {
         log.info("REST request to register trainee: {} {}", request.getFirstName(), request.getLastName());
@@ -56,14 +56,14 @@ public class TraineeController {
     }
 
     @GetMapping("/{username}")
-    @ApiOperation(value = "Get Trainee profile details by username")
+    @Operation(summary = "Get Trainee profile details by username")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Profile found", response = TraineeProfileResponse.class),
-            @ApiResponse(code = 401, message = "Unauthorized access"),
-            @ApiResponse(code = 404, message = "Trainee profile not found")
+            @ApiResponse(responseCode = "200", description = "Profile found"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "404", description = "Trainee profile not found")
     })
     public ResponseEntity<TraineeProfileResponse> getTraineeProfile(@PathVariable String username,
-                                                                    javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                    jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to get trainee profile: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -79,11 +79,11 @@ public class TraineeController {
     }
 
     @PutMapping("/{username}")
-    @ApiOperation(value = "Update an existing Trainee profile")
+    @Operation(summary = "Update an existing Trainee profile")
     public ResponseEntity<TraineeProfileResponse> updateTrainee(
             @PathVariable String username,
             @Valid @RequestBody TraineeUpdateRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to update trainee: {}", username);
 
@@ -106,9 +106,9 @@ public class TraineeController {
     }
 
     @DeleteMapping("/{username}")
-    @ApiOperation(value = "Delete Trainee profile")
+    @Operation(summary = "Delete Trainee profile")
     public ResponseEntity<Void> deleteTrainee(@PathVariable String username,
-                                              javax.servlet.http.HttpServletRequest servletRequest) {
+                                              jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to delete trainee: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -124,16 +124,16 @@ public class TraineeController {
     }
 
     @PutMapping("/{username}/password")
-    @ApiOperation(value = "Change Trainee login password")
+    @Operation(summary = "Change Trainee login password")
     public ResponseEntity<Void> changePassword(
             @PathVariable String username,
             @Valid @RequestBody PasswordChangeRequest request,
-            javax.servlet.http.HttpServletRequest servletRequest) {
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
 
         log.info("REST request to change password for: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
-        if (!username.equals(authenticatedUser) || !username.equals(request.getUsername())) {
+        if (!username.equals(authenticatedUser)) {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
 
@@ -142,10 +142,10 @@ public class TraineeController {
     }
 
     @PutMapping("/{username}/status")
-    @ApiOperation(value = "Activate or Deactivate Trainee profile")
+    @Operation(summary = "Activate or Deactivate Trainee profile")
     public ResponseEntity<Void> updateStatus(@PathVariable String username,
                                              @RequestParam boolean isActive,
-                                             javax.servlet.http.HttpServletRequest servletRequest) {
+                                             jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to set active={} for trainee: {}", isActive, username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -158,10 +158,10 @@ public class TraineeController {
     }
 
     @PutMapping("/{username}/trainers")
-    @ApiOperation(value = "Update Trainee's list of assigned Trainers")
+    @Operation(summary = "Update Trainee's list of assigned Trainers")
     public ResponseEntity<List<TrainerShortInfo>> updateTrainersList(@PathVariable String username,
                                                                      @RequestBody List<String> trainerUsernames,
-                                                                     javax.servlet.http.HttpServletRequest servletRequest) {
+                                                                     jakarta.servlet.http.HttpServletRequest servletRequest) {
         log.info("REST request to update trainers for trainee: {}", username);
 
         String authenticatedUser = (String) servletRequest.getAttribute("authenticatedUser");
@@ -173,16 +173,14 @@ public class TraineeController {
         Trainee updated = gymFacade.getTraineeByUsername(username)
                 .orElseThrow(() -> new com.gym.crm.exception.ResourceNotFoundException("Trainee not found: " + username));
 
-        List<TrainerShortInfo> response = updated.getTrainers() != null ?
-                updated.getTrainers().stream()
+        List<TrainerShortInfo> response = updated.getTrainers().stream()
                         .map(t -> new TrainerShortInfo(
                                 t.getUser().getUsername(),
                                 t.getUser().getFirstName(),
                                 t.getUser().getLastName(),
                                 t.getSpecialization().getTrainingTypeName().name()
                         ))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
+                        .collect(Collectors.toList());
 
         return ResponseEntity.ok(response);
     }
@@ -195,16 +193,14 @@ public class TraineeController {
         response.setAddress(trainee.getAddress());
         response.setActive(trainee.getUser().isActive());
 
-        List<TrainerShortInfo> trainers = trainee.getTrainers() != null ?
-                trainee.getTrainers().stream()
+        List<TrainerShortInfo> trainers = trainee.getTrainers().stream()
                         .map(t -> new TrainerShortInfo(
                                 t.getUser().getUsername(),
                                 t.getUser().getFirstName(),
                                 t.getUser().getLastName(),
                                 t.getSpecialization().getTrainingTypeName().name()
                         ))
-                        .collect(Collectors.toList())
-                : Collections.emptyList();
+                        .collect(Collectors.toList());
 
         response.setTrainers(trainers);
         return response;

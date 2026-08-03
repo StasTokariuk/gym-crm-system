@@ -5,6 +5,7 @@ import com.gym.crm.model.TrainingTypeName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 @Repository
@@ -18,9 +19,10 @@ public class TrainingTypeDao extends AbstractDao<TrainingType> {
 
     public Optional<TrainingType> findByName(TrainingTypeName name) {
         log.debug("Finding training type by name: {}", name);
-        return getCurrentSession()
+        return entityManager
                 .createQuery("SELECT tt FROM TrainingType tt WHERE tt.trainingTypeName = :name", TrainingType.class)
                 .setParameter("name", name)
-                .uniqueResultOptional();
+                .getResultStream()
+                .findFirst();
     }
 }

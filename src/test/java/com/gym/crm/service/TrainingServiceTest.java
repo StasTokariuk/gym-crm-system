@@ -6,10 +6,12 @@ import com.gym.crm.model.Trainer;
 import com.gym.crm.model.Training;
 import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -26,8 +28,14 @@ class TrainingServiceTest {
     @Mock
     private TrainingDao trainingDao;
 
-    @InjectMocks
+    private MeterRegistry meterRegistry;
     private TrainingService service;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        service = new TrainingService(trainingDao, meterRegistry);
+    }
 
     @Test
     @DisplayName("create saves the training")
@@ -40,6 +48,19 @@ class TrainingServiceTest {
 
         assertEquals("Cardio", result.getTrainingName());
         verify(trainingDao).save(training);
+    }
+
+    @Test
+    @DisplayName("create increments the training creation counter metric")
+    void create_incrementsCounter() {
+        Training training = new Training(new Trainee(), new Trainer(), "Cardio",
+                new TrainingType(TrainingTypeName.CARDIO), LocalDate.now(), 60);
+        when(trainingDao.save(any(Training.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.create(training);
+
+        double count = meterRegistry.get("gym.training.created").counter().count();
+        assertEquals(1.0, count);
     }
 
     @Test
