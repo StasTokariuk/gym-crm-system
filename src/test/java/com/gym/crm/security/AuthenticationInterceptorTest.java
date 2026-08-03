@@ -1,16 +1,18 @@
 package com.gym.crm.security;
 
 import com.gym.crm.facade.GymFacade;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
@@ -20,7 +22,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthenticationInterceptorTest {
 
-    @InjectMocks
     private AuthenticationInterceptor interceptor;
 
     @Mock
@@ -34,6 +35,12 @@ class AuthenticationInterceptorTest {
 
     @Mock
     private Object handler;
+
+    @BeforeEach
+    void setUp() {
+        MeterRegistry meterRegistry = new SimpleMeterRegistry();
+        interceptor = new AuthenticationInterceptor(gymFacade, meterRegistry);
+    }
 
     @Test
     @DisplayName("preHandle - Should bypass authentication for Trainee registration (POST /api/trainees)")
@@ -167,5 +174,15 @@ class AuthenticationInterceptorTest {
 
         assertFalse(result, "Should block request if exception occurs");
         verify(response).sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication error");
+    }
+
+    @Test
+    @DisplayName("Authentication metrics are registered in the MeterRegistry")
+    void authenticationMetrics_AreRegistered() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        new AuthenticationInterceptor(gymFacade, registry);
+
+        assertNotNull(registry.find("gym.authentication.attempts").tag("result", "success").counter());
+        assertNotNull(registry.find("gym.authentication.attempts").tag("result", "failure").counter());
     }
 }

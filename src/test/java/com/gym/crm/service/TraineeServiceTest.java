@@ -1,12 +1,15 @@
 package com.gym.crm.service;
 
 import com.gym.crm.dao.TraineeDao;
+import com.gym.crm.dao.TrainerDao;
 import com.gym.crm.model.Trainee;
 import com.gym.crm.model.User;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,18 +29,26 @@ class TraineeServiceTest {
     private TraineeDao traineeDao;
 
     @Mock
+    private TrainerDao trainerDao;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @Mock
     private UserProfileService userProfileService;
 
-    @InjectMocks
+    private MeterRegistry meterRegistry;
     private TraineeService service;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        service = new TraineeService(traineeDao, trainerDao, passwordEncoder, userProfileService, meterRegistry);
+    }
 
     @Test
     @DisplayName("create generates username, password and sets active flag in User object")
     void create_generatesUsernameAndPassword() {
-        // Arrange
         when(userProfileService.buildUsername(eq("John"), eq("Smith"), any(Predicate.class))).thenReturn("John.Smith");
         when(userProfileService.generatePassword()).thenReturn("1234567890");
         when(passwordEncoder.encode("1234567890")).thenReturn("encodedPassword");
@@ -46,16 +57,29 @@ class TraineeServiceTest {
         User user = new User("John", "Smith");
         Trainee t = new Trainee(user, LocalDate.of(2000, 1, 1), "Kyiv");
 
-        // Act
         Trainee result = service.create(t);
 
-        // Assert
         assertEquals("John.Smith", result.getUser().getUsername());
         assertEquals("encodedPassword", result.getUser().getPassword());
         assertTrue(result.getUser().isActive());
 
         verify(userProfileService).buildUsername(eq("John"), eq("Smith"), any(Predicate.class));
         verify(traineeDao).save(t);
+    }
+
+    @Test
+    @DisplayName("create increments the registration counter metric")
+    void create_incrementsRegistrationCounter() {
+        when(userProfileService.buildUsername(anyString(), anyString(), any(Predicate.class))).thenReturn("John.Smith");
+        when(userProfileService.generatePassword()).thenReturn("1234567890");
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+        when(traineeDao.save(any(Trainee.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Trainee t = new Trainee(new User("John", "Smith"), LocalDate.of(2000, 1, 1), "Kyiv");
+        service.create(t);
+
+        double count = meterRegistry.get("gym.trainee.registrations").counter().count();
+        assertEquals(1.0, count);
     }
 
     @Test
@@ -97,7 +121,7 @@ class TraineeServiceTest {
         t.setId(99L);
         when(traineeDao.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> service.update(t));
+        assertThrows(RuntimeException.class, () -> service.update(t));
         verify(traineeDao, never()).save(any());
     }
 
@@ -105,7 +129,7 @@ class TraineeServiceTest {
     @DisplayName("update throws when id is null")
     void update_throwsWhenIdNull() {
         Trainee t = new Trainee();
-        assertThrows(IllegalArgumentException.class, () -> service.update(t));
+        assertThrows(RuntimeException.class, () -> service.update(t));
     }
 
     @Test

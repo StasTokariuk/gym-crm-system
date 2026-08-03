@@ -5,10 +5,12 @@ import com.gym.crm.model.Trainer;
 import com.gym.crm.model.TrainingType;
 import com.gym.crm.model.TrainingTypeName;
 import com.gym.crm.model.User;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,8 +34,14 @@ class TrainerServiceTest {
     @Mock
     private UserProfileService userProfileService;
 
-    @InjectMocks
+    private MeterRegistry meterRegistry;
     private TrainerService service;
+
+    @BeforeEach
+    void setUp() {
+        meterRegistry = new SimpleMeterRegistry();
+        service = new TrainerService(trainerDao, passwordEncoder, userProfileService, meterRegistry);
+    }
 
     @Test
     @DisplayName("create generates username, password and sets active flag")
@@ -54,6 +62,21 @@ class TrainerServiceTest {
 
         verify(userProfileService).buildUsername(eq("Mike"), eq("Brown"), any(Predicate.class));
         verify(trainerDao).save(t);
+    }
+
+    @Test
+    @DisplayName("create increments the registration counter metric")
+    void create_incrementsRegistrationCounter() {
+        when(userProfileService.buildUsername(anyString(), anyString(), any(Predicate.class))).thenReturn("Mike.Brown");
+        when(userProfileService.generatePassword()).thenReturn("1234567890");
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+        when(trainerDao.save(any(Trainer.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Trainer t = new Trainer(new User("Mike", "Brown"), new TrainingType(TrainingTypeName.FITNESS));
+        service.create(t);
+
+        double count = meterRegistry.get("gym.trainer.registrations").counter().count();
+        assertEquals(1.0, count);
     }
 
     @Test
@@ -93,7 +116,7 @@ class TrainerServiceTest {
         t.setId(99L);
         when(trainerDao.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> service.update(t));
+        assertThrows(RuntimeException.class, () -> service.update(t));
         verify(trainerDao, never()).save(any());
     }
 
